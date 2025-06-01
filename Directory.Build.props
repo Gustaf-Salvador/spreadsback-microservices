@@ -1,0 +1,32 @@
+<Project>
+  <PropertyGroup>
+    <!-- Global build optimizations -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningsNotAsErrors />
+    
+    <!-- Performance optimizations -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>false</PublishSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    
+    <!-- Lambda-specific optimizations -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    
+    <!-- Build performance -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    
+    <!-- Debugging optimizations -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <DebugSymbols Condition="'$(Configuration)' == 'Release'">false</DebugSymbols>
+  </PropertyGroup>
+  
+  <!-- Package version centralization -->
+  <PropertyGroup>
+    <AwsSdkVersion>3.7.301</AwsSdkVersion>
+    <HotChocolateVersion>13.9.0</HotChocolateVersion>
+    <SerilogVersion>8.0.0</SerilogVersion>
+  </PropertyGroup>
+</Project>

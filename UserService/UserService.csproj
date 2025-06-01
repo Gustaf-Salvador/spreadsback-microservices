@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <!-- Inherits optimizations from Directory.Build.props -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- AWS Lambda Core -->
+    <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.1" />
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="1.7.0" />
+    
+    <!-- AWS SDK (using centralized version) -->
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.7" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="$(AwsSdkVersion)" />
+    <PackageReference Include="AWSSDK.CloudWatchLogs" Version="$(AwsSdkVersion)" />
+    <PackageReference Include="AWSSDK.CognitoIdentityProvider" Version="$(AwsSdkVersion)" />
+    
+    <!-- GraphQL -->
+    <PackageReference Include="HotChocolate.AspNetCore" Version="$(HotChocolateVersion)" />
+    <PackageReference Include="HotChocolate.Data" Version="$(HotChocolateVersion)" />
+    
+    <!-- Validation -->
+    <PackageReference Include="FluentValidation" Version="11.8.1" />
+    
+    <!-- Logging (using centralized version) -->
+    <PackageReference Include="Serilog.AspNetCore" Version="$(SerilogVersion)" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
+    <PackageReference Include="AWS.Logger.SeriLog" Version="3.1.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="$(SerilogVersion)" />
+    
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>

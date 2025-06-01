@@ -1,0 +1,846 @@
+{
+  "info": {
+    "name": "UserService GraphQL API",
+    "description": "GraphQL API for UserService with DynamoDB backend\n\nThis collection contains all available queries and mutations for user management operations.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Queries",
+      "item": [
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "description": "JWT token from Cognito"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetUser($id: String!) {\\n    user(id: $id) {\\n      id\\n      email\\n      firstName\\n      lastName\\n      phoneNumber\\n      createdAt\\n      updatedAt\\n      status\\n      emailVerified\\n      profilePictureUrl\\n      metadata\\n    }\\n  }\",\n  \"variables\": {\n    \"id\": \"{{user_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Retrieve a user by their unique ID"
+          }
+        },
+        {
+          "name": "Get User by Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetUserByEmail($email: String!) {\\n    userByEmail(email: $email) {\\n      id\\n      email\\n      firstName\\n      lastName\\n      phoneNumber\\n      createdAt\\n      updatedAt\\n      status\\n      emailVerified\\n      profilePictureUrl\\n      metadata\\n    }\\n  }\",\n  \"variables\": {\n    \"email\": \"{{user_email}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Retrieve a user by their email address"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetUsers {\\n    users {\\n      id\\n      email\\n      firstName\\n      lastName\\n      phoneNumber\\n      createdAt\\n      updatedAt\\n      status\\n      emailVerified\\n      profilePictureUrl\\n      metadata\\n    }\\n  }\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Retrieve all users in the system"
+          }
+        },
+        {
+          "name": "Check Email Availability",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query IsEmailAvailable($email: String!) {\\n    isEmailAvailable(email: $email)\\n  }\",\n  \"variables\": {\n    \"email\": \"{{check_email}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Check if an email address is available for registration"
+          }
+        }
+      ],
+      "description": "GraphQL queries for retrieving user data"
+    },
+    {
+      "name": "Mutations",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateUser($input: CreateUserInput!) {\\n    createUser(input: $input) {\\n      id\\n      email\\n      firstName\\n      lastName\\n      phoneNumber\\n      createdAt\\n      updatedAt\\n      status\\n      emailVerified\\n      profilePictureUrl\\n      metadata\\n    }\\n  }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"{{new_user_email}}\",\n      \"firstName\": \"{{new_user_first_name}}\",\n      \"lastName\": \"{{new_user_last_name}}\",\n      \"phoneNumber\": \"{{new_user_phone}}\",\n      \"metadata\": {\n        \"source\": \"postman-test\",\n        \"registrationDate\": \"2024-01-15T10:30:00Z\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Create a new user in the system"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateUser($input: UpdateUserInput!) {\\n    updateUser(input: $input) {\\n      id\\n      email\\n      firstName\\n      lastName\\n      phoneNumber\\n      createdAt\\n      updatedAt\\n      status\\n      emailVerified\\n      profilePictureUrl\\n      metadata\\n    }\\n  }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{user_id}}\",\n      \"firstName\": \"{{updated_first_name}}\",\n      \"lastName\": \"{{updated_last_name}}\",\n      \"phoneNumber\": \"{{updated_phone}}\"\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Update user profile information"
+          }
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation ActivateUser($id: String!) {\\n    activateUser(id: $id) {\\n      id\\n      email\\n      firstName\\n      lastName\\n      status\\n      updatedAt\\n    }\\n  }\",\n  \"variables\": {\n    \"id\": \"{{user_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Activate a pending user account"
+          }
+        },
+        {
+          "name": "Suspend User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation SuspendUser($id: String!) {\\n    suspendUser(id: $id) {\\n      id\\n      email\\n      firstName\\n      lastName\\n      status\\n      updatedAt\\n    }\\n  }\",\n  \"variables\": {\n    \"id\": \"{{user_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Suspend an active user account"
+          }
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DeactivateUser($id: String!) {\\n    deactivateUser(id: $id) {\\n      id\\n      email\\n      firstName\\n      lastName\\n      status\\n      updatedAt\\n    }\\n  }\",\n  \"variables\": {\n    \"id\": \"{{user_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Deactivate a user account"
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation VerifyEmail($id: String!) {\\n    verifyEmail(id: $id) {\\n      id\\n      email\\n      emailVerified\\n      updatedAt\\n    }\\n  }\",\n  \"variables\": {\n    \"id\": \"{{user_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Mark a user's email as verified"
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DeleteUser($id: String!) {\\n    deleteUser(id: $id)\\n  }\",\n  \"variables\": {\n    \"id\": \"{{user_id}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/graphql",
+              "host": ["{{base_url}}"],
+              "path": ["users", "graphql"]
+            },
+            "description": "Delete a user from the system"
+          }
+        },
+        {
+          "name": "Activate User (with Cognito)",
+          "item": [
+            {
+              "name": "1. Enable User in Cognito",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-amz-json-1.1"
+                  },
+                  {
+                    "key": "X-Amz-Target",
+                    "value": "AWSCognitoIdentityProviderService.AdminEnableUser"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "AWS4-HMAC-SHA256 Credential={{aws_access_key}}/{{aws_date}}/{{aws_region}}/cognito-idp/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature={{aws_signature}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"UserPoolId\": \"{{cognito_user_pool_id}}\",\n    \"Username\": \"{{cognito_username}}\"\n}"
+                },
+                "url": {
+                  "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+                  "protocol": "https",
+                  "host": [
+                    "cognito-idp",
+                    "{{aws_region}}",
+                    "amazonaws",
+                    "com"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              }
+            },
+            {
+              "name": "2. Activate User in UserService",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwt_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"query\": \"mutation ActivateUser($id: String!) { activateUser(id: $id) { id email firstName lastName status emailVerified updatedAt } }\",\n    \"variables\": {\n        \"id\": \"{{user_id}}\"\n    }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/graphql",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspend User (with Cognito)",
+          "item": [
+            {
+              "name": "1. Disable User in Cognito",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-amz-json-1.1"
+                  },
+                  {
+                    "key": "X-Amz-Target",
+                    "value": "AWSCognitoIdentityProviderService.AdminDisableUser"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "AWS4-HMAC-SHA256 Credential={{aws_access_key}}/{{aws_date}}/{{aws_region}}/cognito-idp/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature={{aws_signature}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"UserPoolId\": \"{{cognito_user_pool_id}}\",\n    \"Username\": \"{{cognito_username}}\"\n}"
+                },
+                "url": {
+                  "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+                  "protocol": "https",
+                  "host": [
+                    "cognito-idp",
+                    "{{aws_region}}",
+                    "amazonaws",
+                    "com"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              }
+            },
+            {
+              "name": "2. Suspend User in UserService",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwt_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"query\": \"mutation SuspendUser($id: String!) { suspendUser(id: $id) { id email firstName lastName status emailVerified updatedAt } }\",\n    \"variables\": {\n        \"id\": \"{{user_id}}\"\n    }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/graphql",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Deactivate User (with Cognito)",
+          "item": [
+            {
+              "name": "1. Delete User from Cognito",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-amz-json-1.1"
+                  },
+                  {
+                    "key": "X-Amz-Target",
+                    "value": "AWSCognitoIdentityProviderService.AdminDeleteUser"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "AWS4-HMAC-SHA256 Credential={{aws_access_key}}/{{aws_date}}/{{aws_region}}/cognito-idp/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature={{aws_signature}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"UserPoolId\": \"{{cognito_user_pool_id}}\",\n    \"Username\": \"{{cognito_username}}\"\n}"
+                },
+                "url": {
+                  "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+                  "protocol": "https",
+                  "host": [
+                    "cognito-idp",
+                    "{{aws_region}}",
+                    "amazonaws",
+                    "com"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              }
+            },
+            {
+              "name": "2. Deactivate User in UserService",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwt_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"query\": \"mutation DeactivateUser($id: String!) { deactivateUser(id: $id) { id email firstName lastName status emailVerified updatedAt } }\",\n    \"variables\": {\n        \"id\": \"{{user_id}}\"\n    }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/graphql",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Email (with Cognito)",
+          "item": [
+            {
+              "name": "1. Confirm User Email in Cognito",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-amz-json-1.1"
+                  },
+                  {
+                    "key": "X-Amz-Target",
+                    "value": "AWSCognitoIdentityProviderService.AdminConfirmSignUp"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "AWS4-HMAC-SHA256 Credential={{aws_access_key}}/{{aws_date}}/{{aws_region}}/cognito-idp/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature={{aws_signature}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"UserPoolId\": \"{{cognito_user_pool_id}}\",\n    \"Username\": \"{{cognito_username}}\"\n}"
+                },
+                "url": {
+                  "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+                  "protocol": "https",
+                  "host": [
+                    "cognito-idp",
+                    "{{aws_region}}",
+                    "amazonaws",
+                    "com"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              }
+            },
+            {
+              "name": "2. Update Email Attribute in Cognito",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-amz-json-1.1"
+                  },
+                  {
+                    "key": "X-Amz-Target",
+                    "value": "AWSCognitoIdentityProviderService.AdminUpdateUserAttributes"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "AWS4-HMAC-SHA256 Credential={{aws_access_key}}/{{aws_date}}/{{aws_region}}/cognito-idp/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature={{aws_signature}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"UserPoolId\": \"{{cognito_user_pool_id}}\",\n    \"Username\": \"{{cognito_username}}\",\n    \"UserAttributes\": [\n        {\n            \"Name\": \"email_verified\",\n            \"Value\": \"true\"\n        }\n    ]\n}"
+                },
+                "url": {
+                  "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+                  "protocol": "https",
+                  "host": [
+                    "cognito-idp",
+                    "{{aws_region}}",
+                    "amazonaws",
+                    "com"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              }
+            },
+            {
+              "name": "3. Verify Email in UserService",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{jwt_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"query\": \"mutation VerifyEmail($id: String!) { verifyEmail(id: $id) { id email firstName lastName status emailVerified updatedAt } }\",\n    \"variables\": {\n        \"id\": \"{{user_id}}\"\n    }\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/graphql",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "graphql"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cognito Admin Operations",
+          "item": [
+            {
+              "name": "Get User from Cognito",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-amz-json-1.1"
+                  },
+                  {
+                    "key": "X-Amz-Target",
+                    "value": "AWSCognitoIdentityProviderService.AdminGetUser"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "AWS4-HMAC-SHA256 Credential={{aws_access_key}}/{{aws_date}}/{{aws_region}}/cognito-idp/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature={{aws_signature}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"UserPoolId\": \"{{cognito_user_pool_id}}\",\n    \"Username\": \"{{cognito_username}}\"\n}"
+                },
+                "url": {
+                  "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+                  "protocol": "https",
+                  "host": [
+                    "cognito-idp",
+                    "{{aws_region}}",
+                    "amazonaws",
+                    "com"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              }
+            },
+            {
+              "name": "List Users in Cognito Pool",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/x-amz-json-1.1"
+                  },
+                  {
+                    "key": "X-Amz-Target",
+                    "value": "AWSCognitoIdentityProviderService.ListUsers"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "AWS4-HMAC-SHA256 Credential={{aws_access_key}}/{{aws_date}}/{{aws_region}}/cognito-idp/aws4_request, SignedHeaders=host;x-amz-date;x-amz-target, Signature={{aws_signature}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"UserPoolId\": \"{{cognito_user_pool_id}}\",\n    \"Limit\": 10\n}"
+                },
+                "url": {
+                  "raw": "https://cognito-idp.{{aws_region}}.amazonaws.com/",
+                  "protocol": "https",
+                  "host": [
+                    "cognito-idp",
+                    "{{aws_region}}",
+                    "amazonaws",
+                    "com"
+                  ],
+                  "path": [
+                    ""
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "description": "GraphQL mutations for user management operations"
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://your-api-gateway-url.amazonaws.com/dev",
+      "description": "Base URL for the UserService API"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "description": "JWT token from AWS Cognito authentication"
+    },
+    {
+      "key": "user_id",
+      "value": "123e4567-e89b-12d3-a456-426614174000",
+      "description": "Sample user ID for testing"
+    },
+    {
+      "key": "user_email",
+      "value": "test@example.com",
+      "description": "Sample user email for testing"
+    },
+    {
+      "key": "check_email",
+      "value": "newuser@example.com",
+      "description": "Email to check availability"
+    },
+    {
+      "key": "new_user_email",
+      "value": "newuser@example.com",
+      "description": "Email for new user creation"
+    },
+    {
+      "key": "new_user_first_name",
+      "value": "John",
+      "description": "First name for new user"
+    },
+    {
+      "key": "new_user_last_name",
+      "value": "Doe",
+      "description": "Last name for new user"
+    },
+    {
+      "key": "new_user_phone",
+      "value": "+1234567890",
+      "description": "Phone number for new user"
+    },
+    {
+      "key": "updated_first_name",
+      "value": "Jane",
+      "description": "Updated first name"
+    },
+    {
+      "key": "updated_last_name",
+      "value": "Smith",
+      "description": "Updated last name"
+    },
+    {
+      "key": "updated_phone",
+      "value": "+0987654321",
+      "description": "Updated phone number"
+    },
+    {
+      "key": "cognito_user_pool_id",
+      "value": "us-east-1_XXXXXXXXX",
+      "type": "string"
+    },
+    {
+      "key": "cognito_username",
+      "value": "user@example.com",
+      "type": "string"
+    },
+    {
+      "key": "aws_access_key",
+      "value": "AKIAIOSFODNN7EXAMPLE",
+      "type": "string"
+    },
+    {
+      "key": "aws_region",
+      "value": "us-east-1",
+      "type": "string"
+    },
+    {
+      "key": "aws_date",
+      "value": "20240101T000000Z",
+      "type": "string"
+    },
+    {
+      "key": "aws_signature",
+      "value": "calculated_signature",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// You can add pre-request scripts here to automatically get auth tokens",
+          "// Example: Get token from Cognito and set it to auth_token variable",
+          "console.log('Request URL:', pm.request.url.toString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Common test scripts for all requests",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response should be JSON', function () {",
+          "    pm.response.to.have.header('Content-Type');",
+          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+          "});",
+          "",
+          "pm.test('Response should not have GraphQL errors', function () {",
+          "    const responseJson = pm.response.json();",
+          "    pm.expect(responseJson).to.not.have.property('errors');",
+          "});"
+        ]
+      }
+    }
+  ]
+}
