@@ -11,18 +11,14 @@ public record CreateUserInput(
 );
 
 public record UpdateUserInput(
-    Guid Id,
-    string? FirstName,
-    string? LastName,
-    string? PhoneNumber,
-    string? ProfilePictureUrl,
-    UserStatus? Status,
-    bool? EmailVerified,
-    Dictionary<string, object>? Metadata
+    string Id,
+    string FirstName,
+    string LastName,
+    string? PhoneNumber
 );
 
 public record UserResponse(
-    Guid Id,
+    string Id,
     string Email,
     string FirstName,
     string LastName,

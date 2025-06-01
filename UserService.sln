@@ -4,7 +4,7 @@ VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "spreadsback-microservices", "spreadsback-microservices", "{1A2A76DF-6243-C4ED-65AF-1C0CCDECE2BC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserService", "users\UserService.csproj", "{C40ACFDD-15BE-F2D3-0528-46238FFDC0A5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserService", "UserService\UserService.csproj", "{C40ACFDD-15BE-F2D3-0528-46238FFDC0A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
