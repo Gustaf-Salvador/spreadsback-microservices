@@ -30,7 +30,7 @@ namespace UserService.Services
             _cognitoClient = cognitoClient;
             _configuration = configuration;
             _logger = logger;
-            _userPoolId = _configuration["AWS:Cognito:UserPoolId"];
+            _userPoolId = _configuration["AWS:Cognito:UserPoolId"] ?? throw new InvalidOperationException("AWS:Cognito:UserPoolId configuration is required");
         }
 
         public async Task<bool> DisableUserAsync(string email)

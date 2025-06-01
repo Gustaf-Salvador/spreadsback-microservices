@@ -18,6 +18,7 @@
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.7" />
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.301" />
     <PackageReference Include="AWSSDK.CloudWatchLogs" Version="3.7.301" />
+    <PackageReference Include="AWSSDK.CognitoIdentityProvider" Version="3.7.301" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="13.9.0" />
     <PackageReference Include="HotChocolate.Data" Version="13.9.0" />

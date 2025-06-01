@@ -40,8 +40,12 @@ public class Startup
         services.AddAWSService<IAmazonCognitoIdentityProvider>();
         services.AddScoped<DynamoDBContext>();
 
-        // Add DynamoDB initializer
+        // Add DynamoDB services
+        services.AddScoped<IDynamoDbService, DynamoDbService>();
         services.AddScoped<IDynamoDbInitializer, DynamoDbInitializer>();
+
+        // Add event store
+        services.AddScoped<IEventStore, DynamoDbEventStore>();
 
         // Add domain services and repositories
         services.AddScoped<IUserRepository, DynamoDbUserRepository>();
