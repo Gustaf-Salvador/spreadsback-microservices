@@ -1,387 +1,392 @@
-using Microsoft.Extensions.Logging;
+using UserService.Common;
 using UserService.Models;
-using UserService.Repositories;
+using UserService.Events;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace UserService.Services;
 
 public interface IUserDomainService
 {
-    Task<User> CreateUserAsync(string cognitoUserId, string email, string firstName, string lastName, string? phoneNumber = null, Dictionary<string, object>? metadata = null, string createdBy = "System");
-    Task<User> UpdateUserProfileAsync(string userId, string firstName, string lastName, string? phoneNumber = null, string modifiedBy = "System");
-    Task<User> ActivateUserAsync(string userId, string modifiedBy = "System", string? reason = null);
-    Task<User> SuspendUserAsync(string userId, string modifiedBy = "System", string? reason = null);
-    Task<User> DeactivateUserAsync(string userId, string modifiedBy = "System", string? reason = null);
-    Task<User> VerifyEmailAsync(string userId, string modifiedBy = "System", string? reason = null);
-    Task<bool> IsEmailAvailableAsync(string email);
-    Task<User?> GetUserByIdAsync(string userId);
-    Task<User?> GetUserByEmailAsync(string email);
-    Task<IEnumerable<User>> GetAllUsersAsync();
-    Task<bool> DeleteUserAsync(string userId, string deletedBy = "System");
+    Task<OperationResult<User>> CreateUserAsync(string email, string firstName, string lastName, 
+        string? phoneNumber = null, string createdBy = "System", 
+        string? cognitoUserId = null, CancellationToken cancellationToken = default);
+    
+    Task<OperationResult<User>> GetUserByIdAsync(string id, CancellationToken cancellationToken = default);
+    Task<OperationResult<User>> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<OperationResult<IEnumerable<User>>> GetAllUsersAsync(CancellationToken cancellationToken = default);
+    Task<OperationResult<bool>> IsEmailAvailableAsync(string email, CancellationToken cancellationToken = default);
+    
+    Task<OperationResult<User>> UpdateUserProfileAsync(string id, string firstName, string lastName, 
+        string? phoneNumber = null, string modifiedBy = "System", CancellationToken cancellationToken = default);
+    
+    Task<OperationResult<User>> ActivateUserAsync(string id, string modifiedBy = "System", 
+        string? reason = null, CancellationToken cancellationToken = default);
+    
+    Task<OperationResult<User>> SuspendUserAsync(string id, string modifiedBy = "System", 
+        string? reason = null, CancellationToken cancellationToken = default);
+    
+    Task<OperationResult<User>> DeactivateUserAsync(string id, string modifiedBy = "System", 
+        string? reason = null, CancellationToken cancellationToken = default);
+    
+    Task<OperationResult<User>> VerifyEmailAsync(string id, string modifiedBy = "System", 
+        string? reason = null, CancellationToken cancellationToken = default);
+    
+    Task<OperationResult> DeleteUserAsync(string id, CancellationToken cancellationToken = default);
 }
 
 public class UserDomainService : IUserDomainService
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IValidator<User> _userValidator;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ICognitoService _cognitoService;
+    private readonly IValidator<User> _userValidator;
     private readonly ILogger<UserDomainService> _logger;
 
     public UserDomainService(
-        IUserRepository userRepository,
-        IValidator<User> userValidator,
+        IUnitOfWork unitOfWork,
         ICognitoService cognitoService,
+        IValidator<User> userValidator,
         ILogger<UserDomainService> logger)
     {
-        _userRepository = userRepository;
-        _userValidator = userValidator;
+        _unitOfWork = unitOfWork;
         _cognitoService = cognitoService;
+        _userValidator = userValidator;
         _logger = logger;
     }
 
-    public async Task<User> CreateUserAsync(string cognitoUserId, string email, string firstName, string lastName, string? phoneNumber = null, Dictionary<string, object>? metadata = null, string createdBy = "System")
+    public async Task<OperationResult<User>> CreateUserAsync(string email, string firstName, string lastName,
+        string? phoneNumber = null, string createdBy = "System", string? cognitoUserId = null,
+        CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Creating user record for Cognito user: {CognitoUserId}, Email: {Email}, CreatedBy: {CreatedBy}", cognitoUserId, email, createdBy);
-
-        // Validate that Cognito User ID is provided
-        if (string.IsNullOrEmpty(cognitoUserId))
-        {
-            _logger.LogError("Cognito User ID is required for user creation");
-            throw new ArgumentException("Cognito User ID is required", nameof(cognitoUserId));
-        }
-
-        // Domain validation - check if user record already exists for this Cognito user
-        var existingUserById = await _userRepository.GetByIdAsync(cognitoUserId);
-        if (existingUserById != null)
-        {
-            _logger.LogWarning("Attempt to create user record for existing Cognito user: {CognitoUserId}", cognitoUserId);
-            throw new InvalidOperationException($"User record for Cognito user {cognitoUserId} already exists");
-        }
-
-        // Domain validation - check if email already exists in our records
-        if (await _userRepository.EmailExistsAsync(email))
-        {
-            _logger.LogWarning("Attempt to create user with existing email: {Email}", email);
-            throw new InvalidOperationException($"User with email {email} already exists");
-        }
-
-        var user = new User
-        {
-            Id = cognitoUserId, // Use Cognito User ID as our primary key
-            Email = email,
-            FirstName = firstName,
-            LastName = lastName,
-            PhoneNumber = phoneNumber,
-            Metadata = metadata ?? new Dictionary<string, object>(),
-            Status = UserStatus.Pending,
-            EmailVerified = false
-        };
-
-        // Set audit fields for creation
-        user.Create(createdBy, cognitoUserId);
-
-        // Validate domain object
-        var validationResult = await _userValidator.ValidateAsync(user);
-        if (!validationResult.IsValid)
-        {
-            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-            _logger.LogError("User validation failed: {Errors}", errors);
-            throw new ValidationException($"User validation failed: {errors}");
-        }
-
-        // Create user record in our repository (DynamoDB)
-        var createdUser = await _userRepository.CreateAsync(user);
-        
-        _logger.LogInformation("User record created successfully for Cognito user: {CognitoUserId}, Email: {Email}, Version: {Version}", 
-            createdUser.Id, createdUser.Email, createdUser.Version);
-        
-        return createdUser;
-    }
-
-    public async Task<User> UpdateUserProfileAsync(string userId, string firstName, string lastName, string? phoneNumber = null, string modifiedBy = "System")
-    {
-        _logger.LogInformation("Updating user profile: {UserId}, ModifiedBy: {ModifiedBy}", userId, modifiedBy);
-
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            _logger.LogWarning("User not found for update: {UserId}", userId);
-            throw new InvalidOperationException($"User with ID {userId} not found");
-        }
-
-        if (!user.CanBeModified)
-        {
-            _logger.LogWarning("Attempt to update non-modifiable user: {UserId}, Status: {Status}", userId, user.Status);
-            throw new InvalidOperationException($"User {userId} cannot be modified in current status: {user.Status}");
-        }
-
-        // Apply domain logic with auditing
-        user.UpdateProfile(firstName, lastName, phoneNumber, modifiedBy);
-
-        // Validate updated user
-        var validationResult = await _userValidator.ValidateAsync(user);
-        if (!validationResult.IsValid)
-        {
-            var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
-            _logger.LogError("User validation failed during update: {Errors}", errors);
-            throw new ValidationException($"User validation failed: {errors}");
-        }
-
-        var updatedUser = await _userRepository.UpdateAsync(user);
-        
-        _logger.LogInformation("User profile updated successfully: {UserId}, Version: {Version}", userId, updatedUser.Version);
-        
-        return updatedUser;
-    }
-
-    public async Task<User> ActivateUserAsync(string userId, string modifiedBy = "System", string? reason = null)
-    {
-        _logger.LogInformation("Activating user: {UserId}, ModifiedBy: {ModifiedBy}, Reason: {Reason}", userId, modifiedBy, reason);
-
-        // Get user record from our repository
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            _logger.LogWarning("User record not found for activation: {UserId}", userId);
-            throw new InvalidOperationException($"User record with ID {userId} not found");
-        }
-
         try
         {
-            // Step 1: Enable user in Cognito (external service)
-            _logger.LogInformation("Enabling user in Cognito: {Email}", user.Email);
-            var cognitoSuccess = await _cognitoService.EnableUserAsync(user.Email);
-            
-            if (!cognitoSuccess)
+            _logger.LogInformation("Creating user with email {Email}", email);
+
+            // Check if email already exists
+            var emailExistsResult = await _unitOfWork.Users.EmailExistsAsync(email, cancellationToken);
+            if (!emailExistsResult.Success)
+                return OperationResult.Fail<User>($"Failed to check email availability: {emailExistsResult.Error}");
+
+            if (emailExistsResult.Value)
+                return OperationResult.Fail<User>($"User with email {email} already exists");
+
+            // Create user domain object
+            var user = new User
             {
-                _logger.LogError("Failed to enable user in Cognito: {Email}", user.Email);
-                throw new InvalidOperationException($"Failed to enable user {user.Email} in Cognito");
+                Email = email,
+                FirstName = firstName,
+                LastName = lastName,
+                PhoneNumber = phoneNumber
+            };
+
+            user.Create(createdBy, cognitoUserId);
+
+            // Validate domain rules
+            var validationResult = await _userValidator.ValidateAsync(user, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                return OperationResult.Fail<User>($"Validation failed: {errors}");
             }
 
-            // Step 2: Update our user record if Cognito operation succeeded
-            user.Activate(modifiedBy, reason);
-            var updatedUser = await _userRepository.UpdateAsync(user);
-            
-            _logger.LogInformation("User activated successfully: {UserId}, Version: {Version}", userId, updatedUser.Version);
-            
-            return updatedUser;
+            // Persist user
+            var addResult = await _unitOfWork.Users.AddAsync(user, cancellationToken);
+            if (!addResult.Success)
+                return OperationResult.Fail<User>($"Failed to persist user: {addResult.Error}");
+
+            // Add domain event
+            _unitOfWork.AddDomainEvent(new UserService.Events.UserCreatedEvent(user.Id, user.Email, createdBy));
+
+            // Publish domain event
+            await PublishEventAsync(new UserService.Events.UserCreatedEvent(user.Id, user.Email, createdBy));
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully created user {UserId} with email {Email}", user.Id, email);
+            return OperationResult.Ok(user);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during user activation: {UserId}", userId);
-            
-            // If our repository update failed but Cognito succeeded, log critical error for manual intervention
-            if (ex.Message.Contains("Cognito"))
-            {
-                throw; // Cognito failed, safe to rethrow
-            }
-            else
-            {
-                _logger.LogCritical("User enabled in Cognito but repository update failed for user: {UserId}, Email: {Email}. Manual intervention required.", userId, user.Email);
-                throw new InvalidOperationException($"Partial activation failure for user {userId}. Manual intervention required.");
-            }
+            _logger.LogError(ex, "Failed to create user with email {Email}", email);
+            return OperationResult.Fail<User>($"An unexpected error occurred: {ex.Message}");
         }
     }
 
-    public async Task<User> SuspendUserAsync(string userId, string modifiedBy = "System", string? reason = null)
+    public async Task<OperationResult<User>> GetUserByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Suspending user: {UserId}, ModifiedBy: {ModifiedBy}, Reason: {Reason}", userId, modifiedBy, reason);
-
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            _logger.LogWarning("User record not found for suspension: {UserId}", userId);
-            throw new InvalidOperationException($"User record with ID {userId} not found");
-        }
-
         try
         {
-            // Step 1: Disable user in Cognito (external service)
-            _logger.LogInformation("Disabling user in Cognito: {Email}", user.Email);
-            var cognitoSuccess = await _cognitoService.DisableUserAsync(user.Email);
-            
-            if (!cognitoSuccess)
-            {
-                _logger.LogError("Failed to disable user in Cognito: {Email}", user.Email);
-                throw new InvalidOperationException($"Failed to disable user {user.Email} in Cognito");
-            }
+            var result = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
+            if (!result.Success)
+                return OperationResult.Fail<User>($"Failed to retrieve user: {result.Error}");
 
-            // Step 2: Update our user record if Cognito operation succeeded
-            user.Suspend(modifiedBy, reason);
-            var updatedUser = await _userRepository.UpdateAsync(user);
-            
-            _logger.LogInformation("User suspended successfully: {UserId}, Version: {Version}", userId, updatedUser.Version);
-            
-            return updatedUser;
+            return OperationResult.Ok(result.Value);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during user suspension: {UserId}", userId);
-            
-            // If our repository update failed but Cognito succeeded, log critical error for manual intervention
-            if (ex.Message.Contains("Cognito"))
-            {
-                throw; // Cognito failed, safe to rethrow
-            }
-            else
-            {
-                _logger.LogCritical("User disabled in Cognito but repository update failed for user: {UserId}, Email: {Email}. Manual intervention required.", userId, user.Email);
-                throw new InvalidOperationException($"Partial suspension failure for user {userId}. Manual intervention required.");
-            }
+            _logger.LogError(ex, "Failed to get user by ID {UserId}", id);
+            return OperationResult.Fail<User>($"An unexpected error occurred: {ex.Message}");
         }
     }
 
-    public async Task<User> DeactivateUserAsync(string userId, string modifiedBy = "System", string? reason = null)
+    public async Task<OperationResult<User>> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Deactivating user: {UserId}, ModifiedBy: {ModifiedBy}, Reason: {Reason}", userId, modifiedBy, reason);
-
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            _logger.LogWarning("User record not found for deactivation: {UserId}", userId);
-            throw new InvalidOperationException($"User record with ID {userId} not found");
-        }
-
         try
         {
-            // Step 1: Disable user in Cognito (external service)
-            _logger.LogInformation("Disabling user in Cognito: {Email}", user.Email);
-            var cognitoSuccess = await _cognitoService.DisableUserAsync(user.Email);
-            
-            if (!cognitoSuccess)
-            {
-                _logger.LogError("Failed to disable user in Cognito: {Email}", user.Email);
-                throw new InvalidOperationException($"Failed to disable user {user.Email} in Cognito");
-            }
+            var result = await _unitOfWork.Users.GetByEmailAsync(email, cancellationToken);
+            if (!result.Success)
+                return OperationResult.Fail<User>($"Failed to retrieve user: {result.Error}");
 
-            // Step 2: Update our user record if Cognito operation succeeded
-            user.Deactivate(modifiedBy, reason);
-            var updatedUser = await _userRepository.UpdateAsync(user);
-            
-            _logger.LogInformation("User deactivated successfully: {UserId}, Version: {Version}", userId, updatedUser.Version);
-            
-            return updatedUser;
+            return OperationResult.Ok(result.Value);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during user deactivation: {UserId}", userId);
-            
-            // If our repository update failed but Cognito succeeded, log critical error for manual intervention
-            if (ex.Message.Contains("Cognito"))
-            {
-                throw; // Cognito failed, safe to rethrow
-            }
-            else
-            {
-                _logger.LogCritical("User disabled in Cognito but repository update failed for user: {UserId}, Email: {Email}. Manual intervention required.", userId, user.Email);
-                throw new InvalidOperationException($"Partial deactivation failure for user {userId}. Manual intervention required.");
-            }
+            _logger.LogError(ex, "Failed to get user by email {Email}", email);
+            return OperationResult.Fail<User>($"An unexpected error occurred: {ex.Message}");
         }
     }
 
-    public async Task<User> VerifyEmailAsync(string userId, string modifiedBy = "System", string? reason = null)
+    public async Task<OperationResult<IEnumerable<User>>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Verifying email for user: {UserId}, ModifiedBy: {ModifiedBy}, Reason: {Reason}", userId, modifiedBy, reason);
-
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            _logger.LogWarning("User record not found for email verification: {UserId}", userId);
-            throw new InvalidOperationException($"User record with ID {userId} not found");
-        }
-
         try
         {
-            // Step 1: Confirm user email in Cognito (external service)
-            _logger.LogInformation("Confirming user email in Cognito: {Email}", user.Email);
-            var cognitoSuccess = await _cognitoService.ConfirmUserEmailAsync(user.Email);
-            
-            if (!cognitoSuccess)
-            {
-                _logger.LogError("Failed to confirm user email in Cognito: {Email}", user.Email);
-                throw new InvalidOperationException($"Failed to confirm user email {user.Email} in Cognito");
-            }
+            return await _unitOfWork.Users.GetAllAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get all users");
+            return OperationResult.Fail<IEnumerable<User>>($"An unexpected error occurred: {ex.Message}");
+        }
+    }
 
-            // Step 2: Update our user record if Cognito operation succeeded
+    public async Task<OperationResult<bool>> IsEmailAvailableAsync(string email, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _unitOfWork.Users.EmailExistsAsync(email, cancellationToken);
+            return result.Success ? OperationResult.Ok(!result.Value) : OperationResult.Fail<bool>(result.Error);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to check email availability for {Email}", email);
+            return OperationResult.Fail<bool>($"An unexpected error occurred: {ex.Message}");
+        }
+    }
+
+    public async Task<OperationResult<User>> ActivateUserAsync(string id, string modifiedBy = "System",
+        string? reason = null, CancellationToken cancellationToken = default)
+    {
+        return await UpdateUserStatusAsync(id, UserStatus.Active, modifiedBy, reason, cancellationToken,
+            async (user) =>
+            {
+                await _cognitoService.EnableUserAsync(user.Id);
+                _unitOfWork.AddDomainEvent(new UserService.Events.UserActivatedEvent(user.Id, user.Email, modifiedBy, reason));
+            });
+    }
+
+    public async Task<OperationResult<User>> SuspendUserAsync(string id, string modifiedBy = "System",
+        string? reason = null, CancellationToken cancellationToken = default)
+    {
+        return await UpdateUserStatusAsync(id, UserStatus.Suspended, modifiedBy, reason, cancellationToken,
+            async (user) =>
+            {
+                await _cognitoService.DisableUserAsync(user.Id);
+                _unitOfWork.AddDomainEvent(new UserService.Events.UserSuspendedEvent(user.Id, user.Email, modifiedBy, reason));
+            });
+    }
+
+    public async Task<OperationResult<User>> DeactivateUserAsync(string id, string modifiedBy = "System",
+        string? reason = null, CancellationToken cancellationToken = default)
+    {
+        return await UpdateUserStatusAsync(id, UserStatus.Deactivated, modifiedBy, reason, cancellationToken,
+            async (user) =>
+            {
+                await _cognitoService.DisableUserAsync(user.Id);
+                _unitOfWork.AddDomainEvent(new UserService.Events.UserDeactivatedEvent(user.Id, user.Email, modifiedBy, reason));
+            });
+    }
+
+    public async Task<OperationResult<User>> VerifyEmailAsync(string id, string modifiedBy = "System",
+        string? reason = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Verifying email for user {UserId}", id);
+
+            var getUserResult = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
+            if (!getUserResult.Success)
+                return OperationResult.Fail<User>($"User not found: {getUserResult.Error}");
+
+            var user = getUserResult.Value;
+
+            // External service operation first
+            await _cognitoService.ConfirmUserEmailAsync(user.Id);
+
+            // Update domain object
             user.VerifyEmail(modifiedBy, reason);
-            var updatedUser = await _userRepository.UpdateAsync(user);
-            
-            _logger.LogInformation("Email verified successfully for user: {UserId}, Version: {Version}", userId, updatedUser.Version);
-            
-            return updatedUser;
+
+            // Persist changes
+            var updateResult = await _unitOfWork.Users.UpdateAsync(user, cancellationToken);
+            if (!updateResult.Success)
+            {
+                _logger.LogCritical("MANUAL INTERVENTION REQUIRED: Cognito email verified for user {UserId} but DynamoDB update failed: {Error}",
+                    id, updateResult.Error);
+                return OperationResult.Fail<User>($"Partial failure - manual intervention required: {updateResult.Error}");
+            }
+
+            // Add domain event
+            _unitOfWork.AddDomainEvent(new UserService.Events.UserEmailVerifiedEvent(user.Id, user.Email, modifiedBy));
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully verified email for user {UserId}", id);
+            return OperationResult.Ok(user);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during email verification: {UserId}", userId);
+            _logger.LogError(ex, "Failed to verify email for user {UserId}", id);
+            return OperationResult.Fail<User>($"An unexpected error occurred: {ex.Message}");
+        }
+    }
+
+    public async Task<OperationResult<User>> UpdateUserProfileAsync(string id, string firstName, string lastName,
+        string? phoneNumber = null, string modifiedBy = "System", CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Updating profile for user {UserId}", id);
+
+            var getUserResult = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
+            if (!getUserResult.Success)
+                return OperationResult.Fail<User>($"User not found: {getUserResult.Error}");
+
+            var user = getUserResult.Value;
+
+            if (!user.CanBeModified)
+                return OperationResult.Fail<User>("User cannot be modified in current status");
+
+            // Update profile
+            user.UpdateProfile(firstName, lastName, phoneNumber, modifiedBy);
+
+            // Validate
+            var validationResult = await _userValidator.ValidateAsync(user, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage));
+                return OperationResult.Fail<User>($"Validation failed: {errors}");
+            }
+
+            // Persist
+            var updateResult = await _unitOfWork.Users.UpdateAsync(user, cancellationToken);
+            if (!updateResult.Success)
+                return OperationResult.Fail<User>($"Failed to update user: {updateResult.Error}");
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully updated profile for user {UserId}", id);
+            return OperationResult.Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update profile for user {UserId}", id);
+            return OperationResult.Fail<User>($"An unexpected error occurred: {ex.Message}");
+        }
+    }
+
+    public async Task<OperationResult> DeleteUserAsync(string id, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Deleting user {UserId}", id);
+
+            var result = await _unitOfWork.Users.DeleteAsync(id, cancellationToken);
+            if (!result.Success)
+                return OperationResult.Fail($"Failed to delete user: {result.Error}");
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully deleted user {UserId}", id);
+            return OperationResult.Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete user {UserId}", id);
+            return OperationResult.Fail($"An unexpected error occurred: {ex.Message}");
+        }
+    }
+
+    private async Task<OperationResult<User>> UpdateUserStatusAsync(string id, UserStatus newStatus, string modifiedBy,
+        string? reason, CancellationToken cancellationToken, Func<User, Task> cognitoOperation)
+    {
+        try
+        {
+            _logger.LogInformation("Updating user {UserId} status to {Status}", id, newStatus);
+
+            var getUserResult = await _unitOfWork.Users.GetByIdAsync(id, cancellationToken);
+            if (!getUserResult.Success)
+                return OperationResult.Fail<User>($"User not found: {getUserResult.Error}");
+
+            var user = getUserResult.Value;
+
+            if (!user.CanBeModified)
+                return OperationResult.Fail<User>("User cannot be modified in current status");
+
+            // External service operation first
+            await cognitoOperation(user);
+
+            // Update domain object
+            switch (newStatus)
+            {
+                case UserStatus.Active:
+                    user.Activate(modifiedBy, reason);
+                    break;
+                case UserStatus.Suspended:
+                    user.Suspend(modifiedBy, reason);
+                    break;
+                case UserStatus.Deactivated:
+                    user.Deactivate(modifiedBy, reason);
+                    break;
+                default:
+                    return OperationResult.Fail<User>($"Invalid status transition to {newStatus}");
+            }
+
+            // Persist changes
+            var updateResult = await _unitOfWork.Users.UpdateAsync(user, cancellationToken);
+            if (!updateResult.Success)
+            {
+                _logger.LogCritical("MANUAL INTERVENTION REQUIRED: Cognito user {UserId} status changed but DynamoDB update failed: {Error}",
+                    id, updateResult.Error);
+                return OperationResult.Fail<User>($"Partial failure - manual intervention required: {updateResult.Error}");
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully updated user {UserId} status to {Status}", id, newStatus);
+            return OperationResult.Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update user {UserId} status to {Status}", id, newStatus);
+            return OperationResult.Fail<User>($"An unexpected error occurred: {ex.Message}");
+        }
+    }
+
+    private async Task PublishEventAsync(DomainEvent domainEvent)
+    {
+        try
+        {
+            // This would integrate with your event publishing mechanism
+            // For now, just log the event
+            _logger.LogInformation("Publishing domain event: {EventType} for entity {EntityId}", 
+                domainEvent.GetType().Name, domainEvent.EntityId);
             
-            // If our repository update failed but Cognito succeeded, log critical error for manual intervention
-            if (ex.Message.Contains("Cognito"))
-            {
-                throw; // Cognito failed, safe to rethrow
-            }
-            else
-            {
-                _logger.LogCritical("User email confirmed in Cognito but repository update failed for user: {UserId}, Email: {Email}. Manual intervention required.", userId, user.Email);
-                throw new InvalidOperationException($"Partial email verification failure for user {userId}. Manual intervention required.");
-            }
+            // TODO: Implement actual event publishing (e.g., to SNS, EventBridge, etc.)
+            await Task.CompletedTask;
         }
-    }
-
-    public async Task<bool> IsEmailAvailableAsync(string email)
-    {
-        _logger.LogDebug("Checking email availability: {Email}", email);
-        
-        var exists = await _userRepository.EmailExistsAsync(email);
-        var available = !exists;
-        
-        _logger.LogDebug("Email availability check: {Email} = {Available}", email, available);
-        
-        return available;
-    }
-
-    public async Task<User?> GetUserByIdAsync(string userId)
-    {
-        _logger.LogDebug("Retrieving user by ID: {UserId}", userId);
-        return await _userRepository.GetByIdAsync(userId);
-    }
-
-    public async Task<User?> GetUserByEmailAsync(string email)
-    {
-        _logger.LogDebug("Retrieving user by email: {Email}", email);
-        return await _userRepository.GetByEmailAsync(email);
-    }
-
-    public async Task<IEnumerable<User>> GetAllUsersAsync()
-    {
-        _logger.LogDebug("Retrieving all users");
-        return await _userRepository.GetAllAsync();
-    }
-
-    public async Task<bool> DeleteUserAsync(string userId, string deletedBy = "System")
-    {
-        _logger.LogInformation("Deleting user: {UserId}, DeletedBy: {DeletedBy}", userId, deletedBy);
-
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
+        catch (Exception ex)
         {
-            _logger.LogWarning("User not found for deletion: {UserId}", userId);
-            return false;
+            _logger.LogError(ex, "Failed to publish domain event: {EventType}", domainEvent.GetType().Name);
+            // Don't fail the main operation for event publishing failures
         }
-
-        // Note: For user deletion, we might want to implement soft delete instead
-        // or ensure Cognito user is also deleted. This depends on business requirements.
-        var deleted = await _userRepository.DeleteAsync(userId);
-        
-        if (deleted)
-        {
-            _logger.LogInformation("User deleted successfully: {UserId}, Email: {Email}, DeletedBy: {DeletedBy}", 
-                userId, user.Email, deletedBy);
-        }
-        else
-        {
-            _logger.LogWarning("Failed to delete user: {UserId}", userId);
-        }
-        
-        return deleted;
     }
 }

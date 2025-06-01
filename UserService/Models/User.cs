@@ -29,6 +29,13 @@ public class User
     [DynamoDBProperty]
     public string? PhoneNumber { get; set; }
     
+    // Cognito integration
+    [DynamoDBProperty]
+    public string? CognitoUserId { get; set; }
+    
+    [DynamoDBProperty]
+    public DateTime? LastLoginAt { get; set; }
+    
     // Auditing fields
     [DynamoDBProperty]
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

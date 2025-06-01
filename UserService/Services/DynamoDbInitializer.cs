@@ -2,6 +2,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 namespace UserService.Services;
 
@@ -10,7 +11,7 @@ public interface IDynamoDbInitializer
     Task InitializeAsync();
 }
 
-public class DynamoDbInitializer : IDynamoDbInitializer
+public class DynamoDbInitializer : IDynamoDbInitializer, IHostedService
 {
     private readonly IAmazonDynamoDB _dynamoDbClient;
     private readonly ILogger<DynamoDbInitializer> _logger;
@@ -24,6 +25,16 @@ public class DynamoDbInitializer : IDynamoDbInitializer
         _dynamoDbClient = dynamoDbClient;
         _logger = logger;
         _configuration = configuration;
+    }
+
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await InitializeAsync();
+    }
+
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
     }
 
     public async Task InitializeAsync()

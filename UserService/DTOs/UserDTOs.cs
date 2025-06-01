@@ -7,6 +7,7 @@ public record CreateUserInput(
     [Required] string FirstName,
     [Required] string LastName,
     string? PhoneNumber,
+    string? CognitoUserId,
     Dictionary<string, object>? Metadata
 );
 
@@ -14,7 +15,8 @@ public record UpdateUserInput(
     string Id,
     string FirstName,
     string LastName,
-    string? PhoneNumber
+    string? PhoneNumber,
+    string? ProfilePictureUrl
 );
 
 public record UserResponse(

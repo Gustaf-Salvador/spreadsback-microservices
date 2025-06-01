@@ -7,6 +7,10 @@ namespace UserService.Common;
 /// </summary>
 public interface IDomainEvent
 {
-    DateTime OccurredOn { get; }
     string EventId { get; }
+    DateTime OccurredOn { get; }
+    string EventType { get; }
+    string AggregateId { get; }
+    string CorrelationId { get; set; }
+    int Version { get; set; }
 }

@@ -3,6 +3,7 @@ using UserService.Models;
 using UserService.Services;
 using Microsoft.Extensions.Logging;
 using FluentValidation;
+using HotChocolate;
 
 namespace UserService.GraphQL;
 
@@ -25,25 +26,28 @@ public class Mutation
             var cognitoUserId = input.Metadata?.ContainsKey("cognitoUserId") == true 
                 ? input.Metadata["cognitoUserId"]?.ToString() 
                 : throw new ArgumentException("Cognito User ID is required in metadata");
-
             if (string.IsNullOrEmpty(cognitoUserId))
             {
                 throw new ArgumentException("Cognito User ID cannot be empty");
             }
-
-            var user = await userService.CreateUserAsync(
-                cognitoUserId,
+            
+            var result = await userService.CreateUserAsync(
                 input.Email,
                 input.FirstName,
                 input.LastName,
                 input.PhoneNumber,
-                input.Metadata,
-                "GraphQL" // CreatedBy - could be enhanced to include actual user context
+                "GraphQL", // CreatedBy - could be enhanced to include actual user context
+                cognitoUserId
             );
-
-            _logger.LogInformation("GraphQL Mutation: User created successfully: {CognitoUserId}", user.Id);
             
-            return MapToResponse(user);
+            if (!result.Success)
+            {
+                throw new GraphQLException($"Failed to create user: {result.Error}");
+            }
+            
+            _logger.LogInformation("GraphQL Mutation: User created successfully: {UserId}", result.Value.Id);
+            
+            return MapToResponse(result.Value);
         }
         catch (ArgumentException ex)
         {
@@ -73,17 +77,22 @@ public class Mutation
         
         try
         {
-            var user = await userService.UpdateUserProfileAsync(
+            var result = await userService.UpdateUserProfileAsync(
                 input.Id,
                 input.FirstName,
                 input.LastName,
                 input.PhoneNumber,
                 "GraphQL" // ModifiedBy - could be enhanced to include actual user context
             );
-
-            _logger.LogInformation("GraphQL Mutation: User updated successfully: {UserId}", user.Id);
             
-            return MapToResponse(user);
+            if (!result.Success)
+            {
+                throw new GraphQLException($"Failed to update user: {result.Error}");
+            }
+            
+            _logger.LogInformation("GraphQL Mutation: User updated successfully: {UserId}", result.Value.Id);
+            
+            return MapToResponse(result.Value);
         }
         catch (ValidationException ex)
         {
@@ -108,15 +117,20 @@ public class Mutation
         
         try
         {
-            var user = await userService.ActivateUserAsync(
+            var result = await userService.ActivateUserAsync(
                 id, 
                 "GraphQL", // ModifiedBy - could be enhanced to include actual user context
                 reason
             );
             
-            _logger.LogInformation("GraphQL Mutation: User activated successfully: {UserId}", user.Id);
+            if (!result.Success)
+            {
+                throw new GraphQLException($"Failed to activate user: {result.Error}");
+            }
             
-            return MapToResponse(user);
+            _logger.LogInformation("GraphQL Mutation: User activated successfully: {UserId}", result.Value.Id);
+            
+            return MapToResponse(result.Value);
         }
         catch (InvalidOperationException ex)
         {
@@ -136,15 +150,20 @@ public class Mutation
         
         try
         {
-            var user = await userService.SuspendUserAsync(
+            var result = await userService.SuspendUserAsync(
                 id, 
                 "GraphQL", // ModifiedBy - could be enhanced to include actual user context
                 reason
             );
             
-            _logger.LogInformation("GraphQL Mutation: User suspended successfully: {UserId}", user.Id);
+            if (!result.Success)
+            {
+                throw new GraphQLException($"Failed to suspend user: {result.Error}");
+            }
             
-            return MapToResponse(user);
+            _logger.LogInformation("GraphQL Mutation: User suspended successfully: {UserId}", result.Value.Id);
+            
+            return MapToResponse(result.Value);
         }
         catch (InvalidOperationException ex)
         {
@@ -164,15 +183,20 @@ public class Mutation
         
         try
         {
-            var user = await userService.DeactivateUserAsync(
+            var result = await userService.DeactivateUserAsync(
                 id, 
                 "GraphQL", // ModifiedBy - could be enhanced to include actual user context
                 reason
             );
             
-            _logger.LogInformation("GraphQL Mutation: User deactivated successfully: {UserId}", user.Id);
+            if (!result.Success)
+            {
+                throw new GraphQLException($"Failed to deactivate user: {result.Error}");
+            }
             
-            return MapToResponse(user);
+            _logger.LogInformation("GraphQL Mutation: User deactivated successfully: {UserId}", result.Value.Id);
+            
+            return MapToResponse(result.Value);
         }
         catch (InvalidOperationException ex)
         {
@@ -192,15 +216,20 @@ public class Mutation
         
         try
         {
-            var user = await userService.VerifyEmailAsync(
+            var result = await userService.VerifyEmailAsync(
                 id, 
                 "GraphQL", // ModifiedBy - could be enhanced to include actual user context
                 reason
             );
             
-            _logger.LogInformation("GraphQL Mutation: Email verified successfully: {UserId}", user.Id);
+            if (!result.Success)
+            {
+                throw new GraphQLException($"Failed to verify email: {result.Error}");
+            }
             
-            return MapToResponse(user);
+            _logger.LogInformation("GraphQL Mutation: Email verified successfully: {UserId}", result.Value.Id);
+            
+            return MapToResponse(result.Value);
         }
         catch (InvalidOperationException ex)
         {
@@ -220,21 +249,18 @@ public class Mutation
         
         try
         {
-            var deleted = await userService.DeleteUserAsync(
-                id, 
-                "GraphQL" // DeletedBy - could be enhanced to include actual user context
-            );
+            var result = await userService.DeleteUserAsync(id);
             
-            if (deleted)
+            if (result.Success)
             {
                 _logger.LogInformation("GraphQL Mutation: User deleted successfully: {UserId}", id);
+                return true;
             }
             else
             {
-                _logger.LogWarning("GraphQL Mutation: User not found for deletion: {UserId}", id);
+                _logger.LogWarning("GraphQL Mutation: Failed to delete user: {UserId}, Error: {Error}", id, result.Error);
+                return false;
             }
-            
-            return deleted;
         }
         catch (Exception ex)
         {

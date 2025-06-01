@@ -1,7 +1,7 @@
 using HotChocolate;
 using Microsoft.Extensions.Logging;
 
-namespace UserService.GraphQL;
+namespace UserService.GraphQL.Filters;
 
 public class GraphQLErrorFilter : IErrorFilter
 {
@@ -14,13 +14,15 @@ public class GraphQLErrorFilter : IErrorFilter
 
     public IError OnError(IError error)
     {
-        // Log the error for debugging
-        _logger.LogError(error.Exception, "GraphQL error occurred: {Message}", error.Message);
+        // Log the error for monitoring
+        _logger.LogError(error.Exception, "GraphQL Error: {Message}", error.Message);
 
-        // Don't expose internal exception details in production
+        // In production, you might want to hide sensitive error details
+        // and return generic error messages for security
         if (error.Exception != null)
         {
             return error.WithMessage("An internal server error occurred.")
+                       .WithCode("INTERNAL_ERROR")
                        .RemoveException();
         }
 
