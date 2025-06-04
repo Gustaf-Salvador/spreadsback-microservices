@@ -160,7 +160,7 @@ jobs:
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o /tmp/response.json \
             -X POST \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.GITHUB_ACCESS_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.INFRASTRUCTURE_DEPLOY_TOKEN }}" \
             -H "Content-Type: application/json" \
             --data "$PAYLOAD" \
             "https://api.github.com/repos/${{ env.INFRASTRUCTURE_REPO }}/dispatches")
@@ -275,4 +275,3 @@ jobs:
             echo "Monitor deployment progress: [Infrastructure Actions](https://github.com/${{ env.INFRASTRUCTURE_REPO }}/actions)" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Infrastructure Trigger:** Failed" >> $GITHUB_STEP_SUMMARY
-          fi

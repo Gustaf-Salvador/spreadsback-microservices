@@ -1,0 +1,66 @@
+[extend]
+# useDefault will extend the base configuration with the default gitleaks config:
+# https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml
+useDefault = true
+
+[allowlist]
+description = "Global allow list"
+paths = [
+  '''gitleaks\.toml''',
+  '''(.*?)(jpg|gif|doc|pdf|bin)$''',
+  '''(go\.mod|go\.sum)$''',
+  '''\.env$''',
+  '''\.env\.example$''',
+  '''\.env\.template$''',
+  '''coverage/.*''',
+  '''.*\.postman_collection\.json$''',
+  '''.*\.postman_environment\.json$''',
+]
+
+# Allow test keys and tokens
+regexes = [
+  '''AKIAIOSFODNN7EXAMPLE''',
+  '''wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY''',
+  '''calculated_signature''',
+  '''example''',
+  '''test''',
+  '''mock''',
+  '''dummy''',
+  '''fake''',
+  '''sample''',
+  '''placeholder''',
+  # AWS Cognito User Pool IDs and Client IDs are not secrets - they're public identifiers
+  '''us-east-1_[a-zA-Z0-9]{9}''',
+  '''us-east-1:[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}''',
+  '''[a-z0-9]{26}''',
+  # OAuth domains are public
+  '''\.auth\..*\.amazoncognito\.com''',
+  # Postman variable placeholders
+  '''\{\{.*\}\}''',
+  # JWT token placeholders in documentation
+  '''Bearer\s+\{\{.*\}\}''',
+]
+
+[[rules]]
+description = "AWS Access Key ID"
+id = "aws-access-key-id"
+regex = '''(?i)(?:aws_access_key_id|aws_access_key|access_key_id)\s*[=:]\s*['"]?([A-Z0-9]{20})['"]?'''
+secretGroup = 1
+
+[[rules]]
+description = "AWS Secret Access Key"
+id = "aws-secret-access-key"
+regex = '''(?i)(?:aws_secret_access_key|aws_secret_key|secret_access_key)\s*[=:]\s*['"]?([A-Za-z0-9/+=]{40})['"]?'''
+secretGroup = 1
+
+[[rules]]
+description = "GitHub Token"
+id = "github-token"
+regex = '''(?i)github[_\-\.]?token\s*[=:]\s*['"]?(ghp_[A-Za-z0-9_]{36})['"]?'''
+secretGroup = 1
+
+[[rules]]
+description = "Generic API Key"
+id = "generic-api-key"
+regex = '''(?i)(?:api[_\-\.]?key|apikey)\s*[=:]\s*['"]?([A-Za-z0-9_\-]{16,})['"]?'''
+secretGroup = 1
