@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36203.30 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckingAccountsService", "CheckingAccountsService\CheckingAccountsService.csproj", "{2E19A1B8-D108-EA7F-3A46-16B6C2257922}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CheckingAccountsService.Tests", "CheckingAccountsService.Tests\CheckingAccountsService.Tests.csproj", "{8B2705A3-C3B6-4EA9-A382-D2DEB298596F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2E19A1B8-D108-EA7F-3A46-16B6C2257922}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E19A1B8-D108-EA7F-3A46-16B6C2257922}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E19A1B8-D108-EA7F-3A46-16B6C2257922}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E19A1B8-D108-EA7F-3A46-16B6C2257922}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B2705A3-C3B6-4EA9-A382-D2DEB298596F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B2705A3-C3B6-4EA9-A382-D2DEB298596F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B2705A3-C3B6-4EA9-A382-D2DEB298596F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B2705A3-C3B6-4EA9-A382-D2DEB298596F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AC23257F-24E6-4701-AD2D-D4E18CF10156}
+	EndGlobalSection
+EndGlobal
