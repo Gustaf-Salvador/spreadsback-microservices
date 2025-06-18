@@ -759,20 +759,146 @@ var cleanInput = ValidationUtils.SanitizeString(userInput);
 - **Produtividade**: Desenvolvimento mais rápido de novos microserviços
 - **Manutenibilidade**: Mudanças em funcionalidades comuns aplicadas automaticamente
 
-## 10. Checklist de Migração
+## 17. Configuração Completa do Program.cs
 
+```csharp
+using Microsoft.EntityFrameworkCore;
+using SpreadsBack.CommonServices.Infrastructure.Configuration;
+using CheckingAccountsService.Data;
+using CheckingAccountsService.Repositories;
+using System.Reflection;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// 1. Adicionar todos os serviços comuns (MediatR, FluentValidation, Logging, etc.)
+builder.Services.AddCommonServices(Assembly.GetExecutingAssembly());
+
+// 2. Configurar DbContext
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<CheckingAccountDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// 3. Configurar settings de database
+builder.Services.AddDatabaseSettings(settings =>
+{
+    settings.ConnectionString = connectionString;
+    settings.EnableDetailedErrors = builder.Environment.IsDevelopment();
+    settings.CommandTimeout = 30;
+});
+
+// 4. Configurar AWS Services (SNS, Cognito, etc.)
+builder.Services.AddAwsServices(builder.Configuration);
+
+// 5. Registrar repositórios específicos do serviço
+builder.Services.AddScoped<ICheckingAccountRepository, CheckingAccountRepository>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+
+// 6. Configurar autenticação JWT (se necessário para API web)
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// 7. Adicionar controllers se for uma API web
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+// Configurar pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();
+```
+
+## 18. Checklist de Migração Completo
+
+### Configuração Inicial
 - [ ] Instalar pacote SpreadsBack.CommonServices
-- [ ] Migrar entidades para herdar de BaseEntity/UserOwnedEntity
+- [ ] Atualizar Program.cs/Startup.cs com AddCommonServices()
+- [ ] Configurar connection string e database settings
+- [ ] Configurar AWS services (SNS, Cognito)
+
+### Migração de Entidades e Dados
+- [ ] Migrar entidades para herdar de BaseEntity/UserOwnedEntity/FinancialEntity
 - [ ] Migrar DbContext para herdar de BaseDbContext
-- [ ] Migrar handlers para herdar de BaseHandler
-- [ ] Migrar queries/commands para usar interfaces base
 - [ ] Migrar repositórios para herdar de BaseRepository
-- [ ] Migrar API Gateway handler para herdar de BaseApiGatewayHandler
-- [ ] Atualizar Function.cs para usar DI
-- [ ] Atualizar testes unitários
-- [ ] Remover código duplicado
-- [ ] Testar todos os endpoints
-- [ ] Verificar logs e métricas
+- [ ] Atualizar interfaces de repositórios para herdar de IBaseRepository
+
+### Migração de Handlers e Lógica de Negócio
+- [ ] Migrar queries para implementar IQuery<T>
+- [ ] Migrar commands para implementar ICommand<T>
+- [ ] Migrar handlers para herdar de BaseHandler<TRequest, TResponse>
+- [ ] Atualizar handlers para usar event tracking (IEfEventTracker)
+- [ ] Atualizar handlers para usar SNS publishing (ISnsEventPublisher)
+
+### Migração de DTOs
+- [ ] Migrar DTOs para herdar de classes base apropriadas
+- [ ] Usar BaseUserOwnedDto para DTOs com UserId
+- [ ] Usar BaseCreateDto/BaseUpdateDto para operações CRUD
+- [ ] Usar BasePaginatedDto para listas paginadas
+
+### Migração de Lambda Functions
+- [ ] Migrar API Gateway handlers para herdar de BaseApiGatewayHandler
+- [ ] Migrar SQS processors para herdar de BaseSqsMessageProcessor
+- [ ] Atualizar Function.cs para usar DI container
+- [ ] Configurar autenticação via CognitoService
+
+### Migração de Utilitários
+- [ ] Substituir validação manual por ValidationUtils
+- [ ] Substituir JWT parsing manual por JwtUtils
+- [ ] Usar LambdaLoggerAdapter para logging em Lambda functions
+
+### Validação e Testes
+- [ ] Atualizar testes unitários para novos handlers
+- [ ] Testar todos os endpoints/functions
+- [ ] Verificar logs e event tracking
+- [ ] Validar SNS events e SQS processing
+- [ ] Testar autenticação Cognito
+
+### Limpeza
+- [ ] Remover código duplicado (handlers antigos, DTOs, utilitários)
+- [ ] Remover dependências não utilizadas
+- [ ] Atualizar documentação específica do serviço
+- [ ] Revisar e otimizar performance
+
+## 19. Exemplos de Uso Completos
+
+### Microserviço de Checking Accounts - Estrutura Final
+
+```
+CheckingAccountsService/
+├── Function.cs                          # Lambda entry point
+├── CheckingAccountsService.csproj       # Package references
+├── Data/
+│   └── CheckingAccountDbContext.cs      # Herda de BaseDbContext
+├── Entities/
+│   ├── CheckingAccount.cs              # Herda de UserOwnedEntity
+│   └── Transaction.cs                  # Herda de FinancialEntity
+├── DTOs/
+│   ├── AccountDto.cs                   # Herda de BaseUserOwnedDto
+│   ├── CreateAccountDto.cs             # Herda de BaseCreateDto
+│   └── TransactionListDto.cs           # Herda de BasePaginatedDto
+├── Handlers/
+│   ├── Commands/
+│   │   ├── CreateAccountCommand.cs     # Implementa ICommand
+│   │   └── CreateAccountHandler.cs     # Herda de BaseHandler
+│   └── Queries/
+│       ├── GetBalanceQuery.cs          # Implementa IQuery
+│       └── GetBalanceQueryHandler.cs   # Herda de BaseHandler
+├── Repositories/
+│   ├── ICheckingAccountRepository.cs   # Herda de IBaseRepository
+│   └── CheckingAccountRepository.cs    # Herda de BaseRepository
+├── Lambda/
+│   ├── ApiGatewayHandler.cs           # Herda de BaseApiGatewayHandler
+│   └── SqsProcessor.cs                # Herda de BaseSqsMessageProcessor
+└── Validators/
+    ├── CreateAccountValidator.cs       # FluentValidation
+    └── GetBalanceValidator.cs          # FluentValidation
+```
 
 ## Suporte
 
