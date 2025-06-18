@@ -11,6 +11,6 @@
   "function-architecture": "arm64",
   "function-runtime": "dotnet8",
   "function-memory-size": 512,
-  "function-timeout": 30,
+  "function-timeout": 60,
   "function-handler": "CheckingAccountsService::CheckingAccountsService.ApiGatewayHandler::FunctionHandler"
 }

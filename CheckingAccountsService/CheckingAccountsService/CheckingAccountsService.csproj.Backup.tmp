@@ -9,17 +9,23 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- Generate ready to run images during publishing to improve cold start time. -->
     <PublishReadyToRun>true</PublishReadyToRun>
-  </PropertyGroup>  <ItemGroup>
-    <!-- CommonServices Library - inclui MediatR, FluentValidation, EF Core, AWS SDKs, etc. -->
-    <PackageReference Include="SpreadsBack.CommonServices" Version="1.1.0" />
-    
-    <!-- Específicos do Lambda -->
+  </PropertyGroup>
+  <ItemGroup>
     <PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
     <PackageReference Include="Amazon.Lambda.Core" Version="2.6.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4" />
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.2.0" />
-    
-    <!-- Database Provider específico -->
+    <PackageReference Include="AWSSDK.CognitoIdentityProvider" Version="4.0.1.7" />
+    <PackageReference Include="AWSSDK.Core" Version="4.0.0.11" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.0.9" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.6" />
+    <PackageReference Include="Npgsql" Version="9.0.3" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="SpreadsBack.CommonServices" Version="1.1.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
   </ItemGroup>
 </Project>

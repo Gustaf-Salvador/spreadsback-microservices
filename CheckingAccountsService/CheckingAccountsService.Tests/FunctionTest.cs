@@ -5,10 +5,8 @@ using System.Text.Json;
 using System.Net;
 using Moq;
 using CheckingAccountsService.Infrastructure.Authentication;
-using Microsoft.Extensions.DependencyInjection;
 using CheckingAccountsService.Domain.Repositories;
 using CheckingAccountsService.Domain.Entities;
-using CheckingAccountsService.Application.Common.Models;
 
 namespace CheckingAccountsService.Tests;
 
@@ -146,7 +144,7 @@ public class FunctionTest
 
     // Example of how a proper test would look with mocked dependencies
     [Fact(Skip = "Example of proper test with mocked dependencies")]
-    public async Task TestGetTransactionsWithMockedDependencies()
+    public void TestGetTransactionsWithMockedDependencies()
     {
         // Mock token service
         var mockTokenService = new Mock<ITokenService>();

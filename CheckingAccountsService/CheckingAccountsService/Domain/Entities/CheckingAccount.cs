@@ -1,25 +1,19 @@
+using SpreadsBack.CommonServices.Domain.Entities;
+
 namespace CheckingAccountsService.Domain.Entities;
 
-public class CheckingAccount
+public class CheckingAccount : FinancialEntity
 {
-    public Guid Id { get; private set; }
-    public string UserId { get; private set; } = string.Empty;
-    public string CurrencyId { get; private set; } = string.Empty;
     public decimal Balance { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime UpdatedAt { get; private set; }
 
     // For deserialization
     private CheckingAccount() { }
 
     public CheckingAccount(string userId, string currencyId, decimal initialBalance = 0)
     {
-        Id = Guid.NewGuid();
         UserId = userId;
         CurrencyId = currencyId;
         Balance = initialBalance;
-        CreatedAt = DateTime.UtcNow;
-        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Deposit(decimal amount)

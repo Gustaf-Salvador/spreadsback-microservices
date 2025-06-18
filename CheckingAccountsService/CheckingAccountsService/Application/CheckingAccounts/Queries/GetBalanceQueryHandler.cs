@@ -1,42 +1,43 @@
 using CheckingAccountsService.Application.Common.DTOs;
-using CheckingAccountsService.Application.Common.Models;
 using CheckingAccountsService.Domain.Repositories;
-using MediatR;
+using FluentValidation;
+using Microsoft.Extensions.Logging;
+using SpreadsBack.CommonServices.Application.Handlers;
+using SpreadsBack.CommonServices.Core.Models;
 
 namespace CheckingAccountsService.Application.CheckingAccounts.Queries;
 
-public class GetBalanceQueryHandler : IRequestHandler<GetBalanceQuery, ApiResponse<BalanceDto>>
+public class GetBalanceQueryHandler : BaseHandler<GetBalanceQuery, BalanceDto>
 {
     private readonly ICheckingAccountRepository _checkingAccountRepository;
 
-    public GetBalanceQueryHandler(ICheckingAccountRepository checkingAccountRepository)
+    public GetBalanceQueryHandler(
+        ILogger<GetBalanceQueryHandler> logger,
+        IValidator<GetBalanceQuery> validator,
+        ICheckingAccountRepository checkingAccountRepository)
+        : base(logger, validator)
     {
         _checkingAccountRepository = checkingAccountRepository;
     }
 
-    public async Task<ApiResponse<BalanceDto>> Handle(GetBalanceQuery request, CancellationToken cancellationToken)
+    protected override async Task<ApiResponse<BalanceDto>> ExecuteAsync(
+        GetBalanceQuery request, 
+        CancellationToken cancellationToken)
     {
-        try
+        var account = await _checkingAccountRepository.GetByUserIdAndCurrencyAsync(request.UserId, request.CurrencyId);
+
+        if (account == null)
         {
-            var account = await _checkingAccountRepository.GetByUserIdAndCurrencyAsync(request.UserId, request.CurrencyId);
-
-            if (account == null)
-            {
-                return ApiResponse<BalanceDto>.ErrorResponse($"No account found for user {request.UserId} with currency {request.CurrencyId}");
-            }
-
-            var balanceDto = new BalanceDto
-            {
-                CurrencyId = account.CurrencyId,
-                Balance = account.Balance,
-                UpdatedAt = account.UpdatedAt
-            };
-
-            return ApiResponse<BalanceDto>.SuccessResponse(balanceDto);
+            return ApiResponse<BalanceDto>.NotFoundResponse($"No account found for user {request.UserId} with currency {request.CurrencyId}");
         }
-        catch (Exception ex)
+
+        var balanceDto = new BalanceDto
         {
-            return ApiResponse<BalanceDto>.ErrorResponse($"Error retrieving balance: {ex.Message}");
-        }
+            CurrencyId = account.CurrencyId,
+            Balance = account.Balance,
+            UpdatedAt = account.UpdatedAt
+        };
+
+        return ApiResponse<BalanceDto>.SuccessResponse(balanceDto);
     }
 }

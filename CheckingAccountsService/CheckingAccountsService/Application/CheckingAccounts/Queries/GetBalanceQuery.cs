@@ -1,10 +1,9 @@
 using CheckingAccountsService.Application.Common.DTOs;
-using CheckingAccountsService.Application.Common.Models;
-using MediatR;
+using SpreadsBack.CommonServices.Application.Queries;
 
 namespace CheckingAccountsService.Application.CheckingAccounts.Queries;
 
-public record GetBalanceQuery : IRequest<ApiResponse<BalanceDto>>
+public record GetBalanceQuery : IQuery<BalanceDto>
 {
     public string UserId { get; init; } = string.Empty;
     public string CurrencyId { get; init; } = string.Empty;
